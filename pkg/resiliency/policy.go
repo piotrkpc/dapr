@@ -15,9 +15,11 @@ package resiliency
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	diag "github.com/dapr/dapr/pkg/diagnostics"
 
 	"github.com/dapr/dapr/pkg/resiliency/breaker"
 	"github.com/dapr/kit/logger"
@@ -66,6 +68,12 @@ func Policy(ctx context.Context, log logger.Logger, operationName string, t time
 					return operCopy(ctx)
 				})
 				if r != nil && breaker.IsErrorPermanent(err) {
+					if errors.Is(err, breaker.ErrOpenState) {
+						diag.DefaultResiliencyMonitoring.CircuitBreakerOpen(ctx, operationName)
+					}
+					if errors.Is(err, breaker.ErrTooManyRequests) {
+						diag.DefaultResiliencyMonitoring.CircuitBreakerHalfOpenTooManyReq(ctx, operationName)
+					}
 					// Break out of retry.
 					err = backoff.Permanent(err)
 				}
