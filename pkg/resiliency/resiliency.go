@@ -26,6 +26,7 @@ import (
 	"github.com/dapr/dapr/utils"
 
 	"github.com/ghodss/yaml"
+	diag "github.com/dapr/dapr/pkg/diagnostics"
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	lru "github.com/hashicorp/golang-lru"
 
@@ -251,6 +252,7 @@ func FromConfigurations(log logger.Logger, c ...*resiliency_v1alpha.Resiliency) 
 			log.Errorf("Could not read resiliency %s: %w", &config.ObjectMeta.Name, err)
 			continue
 		}
+		diag.DefaultResiliencyMonitoring.PolicyLoaded(config.Name, config.Namespace)
 	}
 	return r
 }
@@ -506,9 +508,11 @@ func (r *Resiliency) EndpointPolicy(ctx context.Context, app string, endpoint st
 		r.log.Debugf("Found Endpoint Policy for %s: %+v", app, policyNames)
 		if policyNames.Timeout != "" {
 			t = r.timeouts[policyNames.Timeout]
+			diag.DefaultResiliencyMonitoring.PolicyExecuted(policyNames.Timeout, diag.TimeoutPolicy)
 		}
 		if policyNames.Retry != "" {
 			rc = r.retries[policyNames.Retry]
+			diag.DefaultResiliencyMonitoring.PolicyExecuted(policyNames.Retry, diag.RetryPolicy)
 		}
 		if policyNames.CircuitBreaker != "" {
 			template, ok := r.circuitBreakers[policyNames.CircuitBreaker]
@@ -529,6 +533,7 @@ func (r *Resiliency) EndpointPolicy(ctx context.Context, app string, endpoint st
 						cb.Initialize(r.log)
 						cache.Add(endpoint, cb)
 					}
+					diag.DefaultResiliencyMonitoring.PolicyExecuted(policyNames.CircuitBreaker, diag.CircuitBreakerPolicy)
 				}
 			}
 		}
@@ -551,6 +556,7 @@ func (r *Resiliency) ActorPreLockPolicy(ctx context.Context, actorType string, i
 		r.log.Debugf("Found Actor Policy for type %s: %+v", actorType, policyNames)
 		if policyNames.Retry != "" {
 			rc = r.retries[policyNames.Retry]
+			diag.DefaultResiliencyMonitoring.PolicyExecuted(policyNames.Retry, diag.RetryPolicy)
 		}
 		if policyNames.CircuitBreaker != "" {
 			template, ok := r.circuitBreakers[policyNames.CircuitBreaker]
@@ -578,6 +584,7 @@ func (r *Resiliency) ActorPreLockPolicy(ctx context.Context, actorType string, i
 						cb.Initialize(r.log)
 						cache.Add(key, cb)
 					}
+					diag.DefaultResiliencyMonitoring.PolicyExecuted(policyNames.CircuitBreaker, diag.CircuitBreakerPolicy)
 				}
 			}
 		}
@@ -600,6 +607,7 @@ func (r *Resiliency) ActorPostLockPolicy(ctx context.Context, actorType string, 
 		r.log.Debugf("Found Actor Policy for type %s: %+v", actorType, policyNames)
 		if policyNames.Timeout != "" {
 			t = r.timeouts[policyNames.Timeout]
+			diag.DefaultResiliencyMonitoring.PolicyExecuted(policyNames.Timeout, diag.TimeoutPolicy)
 		}
 	}
 
@@ -620,13 +628,16 @@ func (r *Resiliency) ComponentOutboundPolicy(ctx context.Context, name string) R
 		r.log.Debugf("Found Component Outbound Policy for component %s: %+v", name, componentPolicies)
 		if componentPolicies.Outbound.Timeout != "" {
 			t = r.timeouts[componentPolicies.Outbound.Timeout]
+			diag.DefaultResiliencyMonitoring.PolicyExecuted(componentPolicies.Outbound.Timeout, diag.TimeoutPolicy)
 		}
 		if componentPolicies.Outbound.Retry != "" {
 			rc = r.retries[componentPolicies.Outbound.Retry]
+			diag.DefaultResiliencyMonitoring.PolicyExecuted(componentPolicies.Outbound.Retry, diag.RetryPolicy)
 		}
 		if componentPolicies.Outbound.CircuitBreaker != "" {
 			template := r.circuitBreakers[componentPolicies.Outbound.CircuitBreaker]
 			cb = r.componentCBs.Get(r.log, name, template)
+			diag.DefaultResiliencyMonitoring.PolicyExecuted(componentPolicies.Outbound.CircuitBreaker, diag.CircuitBreakerPolicy)
 		}
 	}
 
@@ -647,13 +658,16 @@ func (r *Resiliency) ComponentInboundPolicy(ctx context.Context, name string) Ru
 		r.log.Debugf("Found Component Inbound Policy for component %s: %+v", name, componentPolicies)
 		if componentPolicies.Inbound.Timeout != "" {
 			t = r.timeouts[componentPolicies.Inbound.Timeout]
+			diag.DefaultResiliencyMonitoring.PolicyExecuted(componentPolicies.Inbound.Timeout, diag.TimeoutPolicy)
 		}
 		if componentPolicies.Inbound.Retry != "" {
 			rc = r.retries[componentPolicies.Inbound.Retry]
+			diag.DefaultResiliencyMonitoring.PolicyExecuted(componentPolicies.Inbound.Retry, diag.RetryPolicy)
 		}
 		if componentPolicies.Inbound.CircuitBreaker != "" {
 			template := r.circuitBreakers[componentPolicies.Inbound.CircuitBreaker]
 			cb = r.componentCBs.Get(r.log, name, template)
+			diag.DefaultResiliencyMonitoring.PolicyExecuted(componentPolicies.Inbound.CircuitBreaker, diag.CircuitBreakerPolicy)
 		}
 	}
 
