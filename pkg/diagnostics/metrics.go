@@ -57,7 +57,7 @@ func InitMetrics(appID, namespace string) error {
 		return err
 	}
 
-	if err := DefaultResiliencyMonitoring.Init(appID, namespace); err != nil {
+	if err := DefaultResiliencyMonitoring.Init(appID); err != nil {
 		return err
 	}
 

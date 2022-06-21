@@ -3,10 +3,11 @@ package diagnostics
 import (
 	"context"
 
-	diag_utils "github.com/dapr/dapr/pkg/diagnostics/utils"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
+
+	diag_utils "github.com/dapr/dapr/pkg/diagnostics/utils"
 )
 
 var (
@@ -21,10 +22,9 @@ type resiliencyMetrics struct {
 	policiesLoadCount *stats.Int64Measure
 	executionCount    *stats.Int64Measure
 
-	appID     string
-	ctx       context.Context
-	enabled   bool
-	namespace string
+	appID   string
+	ctx     context.Context
+	enabled bool
 }
 
 func newResiliencyMetrics() *resiliencyMetrics {
@@ -45,10 +45,9 @@ func newResiliencyMetrics() *resiliencyMetrics {
 }
 
 // Init registers the resiliency metrics views.
-func (m *resiliencyMetrics) Init(id string, namespace string) error {
+func (m *resiliencyMetrics) Init(id string) error {
 	m.enabled = true
 	m.appID = id
-	m.namespace = namespace
 	return view.Register(
 		diag_utils.NewMeasureView(m.policiesLoadCount, []tag.Key{appIDKey, resiliencyNameKey, namespaceKey}, view.Count()),
 		diag_utils.NewMeasureView(m.executionCount, []tag.Key{appIDKey, resiliencyNameKey, policyKey, namespaceKey}, view.Count()),
@@ -67,11 +66,11 @@ func (m *resiliencyMetrics) PolicyLoaded(resiliencyName, namespace string) {
 }
 
 // PolicyExecuted records metric when policy is executed.
-func (m *resiliencyMetrics) PolicyExecuted(resiliencyName string, policy PolicyType) {
+func (m *resiliencyMetrics) PolicyExecuted(resiliencyName, namespace string, policy PolicyType) {
 	if m.enabled {
 		_ = stats.RecordWithTags(
 			m.ctx,
-			diag_utils.WithTags(appIDKey, m.appID, resiliencyNameKey, resiliencyName, policyKey, string(policy), namespaceKey, m.namespace),
+			diag_utils.WithTags(appIDKey, m.appID, resiliencyNameKey, resiliencyName, policyKey, string(policy), namespaceKey, namespace),
 			m.executionCount.M(1),
 		)
 	}
