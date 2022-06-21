@@ -37,7 +37,7 @@ func TestResiliencyMonitoring(t *testing.T) {
 		diag.InitMetrics("fakeID", "fakeRuntimeNamespace")
 
 		r := resiliency.FromConfigurations(logger.NewLogger("fake-logger"), &resiliencyConf)
-		_ = r.EndpointPolicy(context.TODO(), "appB", "fakeEndpoint", false)
+		_ = r.EndpointPolicy(context.TODO(), "appB", "fakeEndpoint")
 
 		rows, err := view.RetrieveData("resiliency/count")
 		require.NoError(t, err)
